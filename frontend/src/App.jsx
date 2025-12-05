@@ -1,19 +1,40 @@
 import { useState } from "react";
+import emailjs from "@emailjs/browser";
 
 const OFFERS = [
-  { label: "$10 off", description: "$10 off your total service." },
-  { label: "$15 off", description: "$15 off braids over $200." },
+  {
+    label: "$10 off",
+    description: "$10 off your total service.",
+  },
+  {
+    label: "$15 off",
+    description: "$15 off braids over $200.",
+  },
   {
     label: "$50 off extra full boho",
     description: "$50 off your extra full boho style.",
   },
-  { label: "Free boho hair", description: "Free boho curly hair added." },
-  { label: "$25 off next appointment", description: "$25 off your next visit." },
-  { label: "Try again", description: "No win this time, spin again 🥹" },
+  {
+    label: "Free boho hair",
+    description: "Free boho curly hair added for regular boho styles.",
+  },
+  {
+    label: "$25 off next appointment",
+    description: "$25 off your next visit.",
+  },
+  {
+    label: "Try again",
+    description: "No win this time, boo — try again 🥹",
+  },
 ];
 
 // Your real booking link
 const BOOKING_LINK = "https://braidszbyslym.as.me";
+
+// EmailJS values
+const EMAIL_SERVICE_ID = "service_yypcbob";
+const EMAIL_TEMPLATE_ID = "template_8bc7t8k";
+const EMAIL_PUBLIC_KEY = "ZQ7Enr_EGeQE6cnfz";
 
 function App() {
   const [form, setForm] = useState({
@@ -38,51 +59,102 @@ function App() {
   };
 
   const handleSpin = () => {
-    // only name is required
+    // Only name is required
     if (!form.name.trim()) {
       setError("Please enter your name before spinning.");
       return;
     }
 
+    // 🔒 Check localStorage first – one spin per device (unless they get Try again)
+    try {
+      const used = localStorage.getItem("braidsz_spin_used");
+      if (used === "true") {
+        setHasSpun(true);
+        setError("This device has already used its spin for this promo.");
+        return;
+      }
+    } catch (e) {
+      console.error("Could not access localStorage", e);
+      // If localStorage fails, just continue
+    }
+
     if (isSpinning) return;
 
     setIsSpinning(true);
-    setHasSpun(true);
     setError("");
     setCopied(false);
 
     setTimeout(() => {
+      // Weighted: free boho + $50 off extra full boho are rare
       const weightedOffers = [
-        "10", "10", "10", // $10 off (3)
-        "15", "15",       // $15 off (2)
-        "boho",           // $50 off (1 - rare)
-        "free", "free",   // Free boho hair (2)
-        "25",             // $25 off (1)
-        "none", "none",   // Try again (2)
+        "10", "10", "10", // $10 off — common
+        "15", "15",       // $15 off — medium
+        "25", "25",       // $25 off — medium
+        "free",           // free regular boho hair — rare
+        "boho",           // $50 off extra full boho — rare
+        "none", "none",   // try again — medium
       ];
 
       const randomPick =
         weightedOffers[Math.floor(Math.random() * weightedOffers.length)];
 
+      let landedOffer = null;
+
       switch (randomPick) {
         case "10":
-          setResult(OFFERS[0]);
+          landedOffer = OFFERS[0];
           break;
         case "15":
-          setResult(OFFERS[1]);
+          landedOffer = OFFERS[1];
           break;
         case "boho":
-          setResult(OFFERS[2]);
+          landedOffer = OFFERS[2];
           break;
         case "free":
-          setResult(OFFERS[3]);
+          landedOffer = OFFERS[3];
           break;
         case "25":
-          setResult(OFFERS[4]);
+          landedOffer = OFFERS[4];
           break;
         default:
-          setResult(OFFERS[5]);
+          landedOffer = OFFERS[5]; // Try again
       }
+
+      setResult(landedOffer);
+
+      // 🔐 Only lock this device if it's NOT "Try again"
+      if (landedOffer.label !== "Try again") {
+        setHasSpun(true);
+        try {
+          localStorage.setItem("braidsz_spin_used", "true");
+        } catch (e) {
+          console.error("Could not write to localStorage", e);
+        }
+      }
+
+      // ✉️ Send notification email to you
+      emailjs
+        .send(
+          EMAIL_SERVICE_ID,
+          EMAIL_TEMPLATE_ID,
+          {
+            
+            user_name: form.name || "(not provided)",
+            style: form.style || "(not specified)",
+            instagram: form.instagram || "(not provided)",
+            offer_label: landedOffer.label,
+            offer_description: landedOffer.description || "",
+            booking_link: BOOKING_LINK,
+            timestamp: new Date().toLocaleString(),
+          },
+          EMAIL_PUBLIC_KEY
+        )
+        .then(() => {
+          console.log("EmailJS: spin notification sent ✅");
+        })
+        .catch((error) => {
+          console.error("EmailJS failed ❌", error);
+        });
 
       setIsSpinning(false);
     }, 1500);
@@ -273,7 +345,7 @@ function App() {
               </p>
             )}
 
-            {hasSpun && !isSpinning && result && (
+            {hasSpun && !isSpinning && result && result.label !== "Try again" && (
               <p
                 style={{
                   marginTop: "0.5rem",
@@ -285,8 +357,8 @@ function App() {
                   borderRadius: "0.65rem",
                 }}
               >
-                You already spun. Screenshot or share your result, then tap “Book
-                now” 💕
+                You already used your spin on this device. Screenshot or share
+                your result, then tap “Book now” 💕
               </p>
             )}
 
@@ -501,7 +573,8 @@ const inputStyle = {
   width: "100%",
   padding: "0.55rem 0.7rem",
   borderRadius: "0.7rem",
-  border: "1px solid #e5b9cc",
+  border: "1px solid " +
+    "#e5b9cc",
   fontSize: "0.9rem",
   outline: "none",
   backgroundColor: "#fff6fa",
