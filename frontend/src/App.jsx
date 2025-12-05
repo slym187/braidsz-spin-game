@@ -12,8 +12,8 @@ const OFFERS = [
   { label: "Try again", description: "No win this time, spin again 🥹" },
 ];
 
-// 👉 Replace this with your real booking link
-const BOOKING_LINK = "https://braidszbyslm.as.me";
+// Your real booking link
+const BOOKING_LINK = "https://braidszbyslym.as.me";
 
 function App() {
   const [form, setForm] = useState({
@@ -88,18 +88,6 @@ function App() {
     }, 1500);
   };
 
-  const handleReset = () => {
-    setResult(null);
-    setHasSpun(false);
-    setError("");
-    setCopied(false);
-    setForm((prev) => ({
-      ...prev,
-      name: "",
-      style: "",
-    }));
-  };
-
   const handleShare = async () => {
     if (!result) {
       setError("Spin the wheel first to get an offer to share.");
@@ -134,6 +122,15 @@ function App() {
       console.error(err);
       setError("Could not copy. You can screenshot this screen instead.");
     }
+  };
+
+  const handleBookNow = () => {
+    if (!result) {
+      setError("Spin the wheel first, then book with your offer.");
+      return;
+    }
+
+    window.open(BOOKING_LINK, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -221,7 +218,7 @@ function App() {
               }}
             >
               Enter your details, spin once, then screenshot or copy your result.
-              Send it with your booking message to claim your offer.
+              Use it immediately when you book your appointment.
             </p>
           </header>
 
@@ -288,7 +285,8 @@ function App() {
                   borderRadius: "0.65rem",
                 }}
               >
-                You already spun. Screenshot or share your result 💕
+                You already spun. Screenshot or share your result, then tap “Book
+                now” 💕
               </p>
             )}
 
@@ -316,10 +314,23 @@ function App() {
             >
               {isSpinning ? "Spinning..." : "Spin the wheel"}
             </button>
+
+            {BOOKING_LINK && (
+              <p
+                style={{
+                  marginTop: "0.6rem",
+                  fontSize: "0.78rem",
+                  color: "#7a1b46",
+                }}
+              >
+                After you spin, you can go straight to booking using the “Book
+                now” button on the right.
+              </p>
+            )}
           </form>
         </section>
 
-        {/* Right: Wheel + Result */}
+        {/* Right: Wheel + Result + Booking CTA */}
         <section
           style={{
             background:
@@ -374,7 +385,7 @@ function App() {
             </div>
           </div>
 
-          {/* Result card */}
+          {/* Result + actions */}
           <div
             style={{
               background: "rgba(255,240,246,0.96)",
@@ -424,8 +435,9 @@ function App() {
                     fontSize: "0.8rem",
                   }}
                 >
-                  Screenshot this or tap “Copy result to share” and paste it in
-                  your DM / booking request so your discount can be applied.
+                  Screenshot this or tap “Copy result to share”, then hit “Book
+                  now” and paste it into your booking notes or DM so your
+                  discount can be applied.
                 </p>
 
                 <div
@@ -451,20 +463,22 @@ function App() {
                   >
                     {copied ? "Copied! 💕" : "Copy result to share"}
                   </button>
+
                   <button
-                    onClick={handleReset}
+                    onClick={handleBookNow}
                     style={{
                       flex: 1,
                       borderRadius: "999px",
                       padding: "0.45rem 0.9rem",
                       border: "none",
-                      background: "#ffe4ef",
-                      color: "#7a1b46",
+                      background:
+                        "linear-gradient(135deg, #ff8bbd, #cc3f91)",
+                      color: "#fff",
                       fontSize: "0.8rem",
                       cursor: "pointer",
                     }}
                   >
-                    Clear for next client
+                    Book now
                   </button>
                 </div>
               </>
